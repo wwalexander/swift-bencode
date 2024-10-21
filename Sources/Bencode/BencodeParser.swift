@@ -43,9 +43,17 @@ struct BencodeParser {
 
     private mutating func parseDictionary() throws(BencodeError) -> [String: BencodeValue] {
         var dictionary: [String: BencodeValue] = [:]
+        var previousKey: String?
 
         while try bytes.peek() != UInt8(ascii: "e") {
-            try dictionary[parseString()] = parseValue()
+            let key: String = try parseString()
+            defer { previousKey = key }
+
+            if let previousKey, !previousKey.lexicographicallyPrecedes(key) {
+                throw BencodeError.unsortedDictionaryKey(location: bytes.currentIndex)
+            }
+
+            try dictionary[key] = parseValue()
         }
 
         try bytes.pop()
@@ -176,4 +184,5 @@ enum BencodeError: Error {
     case unexpectedEndOfFile
     case integerWithLeadingZero(location: Int)
     case integerIsNotRepresentableInSwift
+    case unsortedDictionaryKey(location: Int)
 }
