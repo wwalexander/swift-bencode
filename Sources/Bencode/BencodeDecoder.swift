@@ -138,7 +138,7 @@ internal struct BencodeKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingCont
     }
 }
 
-internal struct BencodeUnkeyedDecodingContainer: UnkeyedDecodingContainer {
+internal struct BencodeUnkeyedDecodingContainer : UnkeyedDecodingContainer {
     let list: [BencodeValue]
     let codingPath: [any CodingKey]
 
@@ -197,20 +197,23 @@ internal struct BencodeSingleValueDecodingContainer: SingleValueDecodingContaine
     }
 
     func decode<T: Decodable>(_ type: T.Type) throws -> T {
+        if type == Data.self {
+            guard case .string(let data) = value else {
+                throw DecodingError.typeMismatch(type, .init(
+                    codingPath: codingPath,
+                    debugDescription: "Expected string"
+                ))
+            }
+            return data as! T
+        } else if type == URL.self {
+            let string = try decode(String.self)
+            return URL(string: string)! as! T
+        }
+        
         let decoder = BencodeDecoderImpl(value: value, codingPath: codingPath)
         return try T(from: decoder)
     }
-
-    func decode(_ type: Data.Type) throws -> Data {
-        guard case .string(let data) = value else {
-            throw DecodingError.typeMismatch(type, .init(
-                codingPath: codingPath,
-                debugDescription: "Expected string"
-            ))
-        }
-        return data
-    }
-
+    
     func decode(_ type: String.Type) throws -> String {
         let data = try decode(Data.self)
 
