@@ -14,7 +14,10 @@ let package = Package(
         .target(name: "Bencode"),
         .testTarget(
             name: "BencodeTests",
-            dependencies: ["Bencode"]
+            dependencies: ["Bencode"],
+            resources: [
+                .copy("debian-13.2.0-arm64-netinst.iso.torrent")
+            ]
         ),
     ]
 )
